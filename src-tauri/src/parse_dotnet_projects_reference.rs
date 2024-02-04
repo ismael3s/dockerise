@@ -31,13 +31,7 @@ pub struct Project {
 
 impl ProjectReference {
     pub fn get_include(&self) -> String {
-        return self
-            .include
-            .clone()
-            .split(MAIN_SEPARATOR)
-            .last()
-            .unwrap()
-            .to_string();
+        return self.include.clone().split('\\').last().unwrap().to_string();
     }
 }
 
@@ -51,7 +45,11 @@ impl Project {
     }
 
     pub fn update_project_name(&mut self, project_full_name: &str) {
-        self.name = project_full_name.split('\\').last().unwrap().to_string();
+        self.name = project_full_name
+            .split(MAIN_SEPARATOR)
+            .last()
+            .unwrap()
+            .to_string();
     }
 
     pub fn filter_only_item_groups_with_reference(&self) -> Vec<ItemGroup> {
