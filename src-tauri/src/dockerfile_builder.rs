@@ -15,9 +15,7 @@ impl DockerFilePath {
             .unwrap_or("")
             .split(main_separator)
             .filter(|x| !x.is_empty())
-            .collect::<Vec<_>>()
-            // .join("/")
-            ;
+            .collect::<Vec<_>>();
         let cs_proj_folder = path_segments
             .iter()
             .filter(|p| !p.contains("csproj"))
@@ -25,19 +23,6 @@ impl DockerFilePath {
             .collect::<Vec<_>>()
             .join("/");
         let cs_proj = path_segments.join("/");
-        // let path_segments = system_path.split(main_separator).collect::<Vec<_>>();
-        // if path_segments.len() < 2 {
-        //     return Err("O caminho do arquivo não é válido - exemplo: /home/user/sln_folder/project_folder/proect_folder.csproj");
-        // }
-        // let cs_proj = path_segments
-        //     .iter()
-        //     .rev()
-        //     .take(2)
-        //     .rev()
-        //     .map(|file| file.to_string())
-        //     .collect::<Vec<_>>()
-        //     .join("/");
-        // let cs_proj_folder = cs_proj.split("/").take(1).collect::<Vec<_>>().join("");
         Ok(DockerFilePath {
             cs_proj,
             cs_proj_folder,
