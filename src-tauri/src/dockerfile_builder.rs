@@ -4,20 +4,25 @@ pub struct DockerFilePath {
 }
 
 impl DockerFilePath {
-    pub fn new(system_path: &str, main_separator: char) -> Result<DockerFilePath, &'static str> {
-        let path_segments = system_path.split(main_separator).collect::<Vec<_>>();
-        if path_segments.len() < 2 {
-            return Err("O caminho do arquivo não é válido - exemplo: /home/user/sln_folder/project_folder/proect_folder.csproj");
-        }
-        let cs_proj = path_segments
+    pub fn new(
+        system_path: &str,
+        root_path: &str,
+        main_separator: char,
+    ) -> Result<DockerFilePath, &'static str> {
+        let path_segments = system_path
+            .split(root_path)
+            .last()
+            .unwrap_or("")
+            .split(main_separator)
+            .filter(|x| !x.is_empty())
+            .collect::<Vec<_>>();
+        let cs_proj_folder = path_segments
             .iter()
-            .rev()
-            .take(2)
-            .rev()
+            .filter(|p| !p.contains("csproj"))
             .map(|file| file.to_string())
             .collect::<Vec<_>>()
             .join("/");
-        let cs_proj_folder = cs_proj.split("/").take(1).collect::<Vec<_>>().join("");
+        let cs_proj = path_segments.join("/");
         Ok(DockerFilePath {
             cs_proj,
             cs_proj_folder,
@@ -135,6 +140,7 @@ mod tests {
     fn docker_file_path_should_be_able_to_parse_windows_cs_project() {
         let sut = DockerFilePath::new(
             "C:\\Users\\user\\sln_folder\\project_folder\\project_folder.csproj",
+            "C:\\Users\\user\\sln_folder",
             '\\',
         );
 
@@ -148,11 +154,25 @@ mod tests {
     fn docker_file_path_should_be_able_to_parse_linx_cs_project() {
         let sut = DockerFilePath::new(
             "/home/user/sln_folder/project_folder/project_folder.csproj",
+            "/home/user/sln_folder",
             '/',
         );
         assert_eq!(sut.is_ok(), true);
         let result = sut.unwrap();
         assert_eq!(result.cs_proj, "project_folder/project_folder.csproj");
         assert_eq!(result.cs_proj_folder, "project_folder");
+    }
+
+    #[test]
+    fn dockerfile_path_should_be_able_to_parse_projects_inside_nested_folder() {
+        let sut = DockerFilePath::new(
+            "/home/user/sln_folder/src/project_folder/project_folder.csproj",
+            "/home/user/sln_folder",
+            '/',
+        );
+        assert_eq!(sut.is_ok(), true);
+        let result = sut.unwrap();
+        assert_eq!(result.cs_proj, "src/project_folder/project_folder.csproj");
+        assert_eq!(result.cs_proj_folder, "src/project_folder");
     }
 }

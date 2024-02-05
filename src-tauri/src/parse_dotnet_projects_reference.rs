@@ -25,7 +25,7 @@ pub struct Project {
     name: String,
     #[serde(rename = "PropertyGroup")]
     property_group: PropertyGroup,
-    #[serde(rename = "ItemGroup")]
+    #[serde(rename = "ItemGroup", default)]
     items_groups: Vec<ItemGroup>,
 }
 
