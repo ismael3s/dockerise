@@ -27,55 +27,23 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import { SiDocker, SiDotnet, SiNextdotjs } from "react-icons/si";
 import { z } from "zod";
+import { schema } from "./schema";
 type Result = {
   mermaid: string;
   dockerfile: string;
 };
 
-enum ProjectType {
+export enum ProjectType {
   Dotnet = "Dotnet",
   Next = "Next"
 }
 
-const schema = z
-  .object({
-    projectType: z.string().min(1, "Campo obrigatorio"),
-    projectRoot: z
-      .string({
-        required_error: "Campo obrigatorio"
-      })
-      .min(1, "Campo obrigatorio"),
-    availableProjectsInsideFolder: z
-      .array(z.string().default(""), {
-        required_error: "Campo obrigatorio"
-      })
-      .default([])
-      .optional()
-      .nullable(),
-    selectedStartupProject: z.string().default("").optional().nullable()
-  })
-  .refine(
-    (schema) => {
-      const isDotnetProjectWithoutStartupProject =
-        schema.projectType === ProjectType.Dotnet &&
-        !schema.selectedStartupProject;
-      return !isDotnetProjectWithoutStartupProject;
-    },
-    {
-      params: {
-        message:
-          "Ao selecionar o tipo de projeto dotnet, é obrigatorio selecionar o projeto principal."
-      },
-      message:
-        "Ao selecionar o tipo de projeto dotnet, é obrigatorio selecionar o projeto principal.",
-      path: ["selectedStartupProject"]
-    }
-  );
-
 export default function Home() {
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -87,6 +55,7 @@ export default function Home() {
   });
 
   const [result, setResult] = useState({} as Result);
+
   async function selectProjectRoot() {
     const selected = await open({
       directory: true,
@@ -105,10 +74,29 @@ export default function Home() {
   async function onSubmit(values: z.infer<typeof schema>) {
     const result = await invoke<Result>("my_custom_command", {
       projectRoot: values.projectRoot,
-      startupProject: values.selectedStartupProject,
+      maybeStartupProject: values.selectedStartupProject,
       projectType: values.projectType
     });
     setResult(result);
+  }
+
+  async function writeDockerFile() {
+    try {
+      toast({
+        title: "Dockerfile criado com sucesso!",
+        description:
+          "Os arquivos Dockerfile e .dockerignore foram criados com sucesso!"
+      });
+      await invoke<string>("write_docker", {
+        projectRoot: form.getValues().projectRoot,
+        dockerfile: result.dockerfile
+      });
+    } catch (error: string) {
+      toast({
+        title: "Erro ao criar Dockerfile",
+        description: error
+      });
+    }
   }
 
   const isDotnet = () => form.getValues().projectType === "Dotnet";
@@ -247,23 +235,37 @@ export default function Home() {
           </TabsList>
           <TabsContent value="docker" className="">
             {result.dockerfile && (
-              <div className="relative mt-4">
-                <BsCopy
-                  className="cursor-pointer hover:opacity-70 transition-opacity duration-300 ease-linear 
+              <>
+                <div className="">
+                  <Button
+                    className="my-1"
+                    type="button"
+                    disabled={
+                      !result.dockerfile || !form.getValues().projectRoot
+                    }
+                    onClick={() => writeDockerFile()}
+                  >
+                    Escrever Dockerfile
+                  </Button>
+                </div>
+                <div className="relative mt-4">
+                  <BsCopy
+                    className="cursor-pointer hover:opacity-70 transition-opacity duration-300 ease-linear 
                 absolute top-4 right-4
                 "
-                  onClick={() => {
-                    window?.navigator?.clipboard.writeText(result.dockerfile);
-                  }}
-                />
-                <SyntaxHighlighter
-                  language="dockerfile"
-                  showLineNumbers
-                  style={nord}
-                >
-                  {result.dockerfile}
-                </SyntaxHighlighter>
-              </div>
+                    onClick={() => {
+                      window?.navigator?.clipboard.writeText(result.dockerfile);
+                    }}
+                  />
+                  <SyntaxHighlighter
+                    language="dockerfile"
+                    showLineNumbers
+                    style={nord}
+                  >
+                    {result.dockerfile}
+                  </SyntaxHighlighter>
+                </div>
+              </>
             )}
           </TabsContent>
           <TabsContent value="project-reference">

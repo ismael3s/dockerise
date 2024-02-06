@@ -3,6 +3,7 @@
 
 mod dockerfile_builder;
 mod parse_dotnet_projects_reference;
+mod write_dockerfile;
 
 use std::{fs::File, io::BufReader, path::MAIN_SEPARATOR};
 use walkdir::WalkDir;
@@ -37,6 +38,15 @@ fn find_projects_files(path: &str) -> Vec<String> {
 }
 
 #[tauri::command]
+fn write_docker(project_root: String, dockerfile: String) -> Result<(), &'static str> {
+    let input = write_dockerfile::Input {
+        project_root,
+        dockerfile,
+        should_override: true,
+    };
+    return write_dockerfile::WriteDockerfile::new().execute(input);
+}
+#[tauri::command]
 fn my_custom_command(
     project_root: String,
     project_type: ProjectType,
@@ -60,7 +70,8 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             my_custom_command,
-            find_projects_files
+            find_projects_files,
+            write_docker
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
