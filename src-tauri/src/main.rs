@@ -10,12 +10,19 @@ use walkdir::WalkDir;
 use crate::{dockerfile_builder::DockerFilePath, parse_dotnet_projects_reference::Mermaid};
 
 use parse_dotnet_projects_reference::Project;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize)]
+enum ProjectType {
+    Dotnet,
+    Next,
+    Frontend,
+}
 
 #[derive(Debug, Serialize)]
 struct Output {
     dockerfile: String,
-    mermaid: String,
+    mermaid: Option<String>,
 }
 
 #[tauri::command]
@@ -30,7 +37,36 @@ fn find_projects_files(path: &str) -> Vec<String> {
 }
 
 #[tauri::command]
-fn my_custom_command(project_root: String, startup_project: String) -> Output {
+fn my_custom_command(
+    project_root: String,
+    project_type: ProjectType,
+    maybe_startup_project: Option<String>,
+) -> Output {
+    match project_type {
+        ProjectType::Dotnet => {
+            let startup_project = maybe_startup_project.unwrap_or("".to_string());
+            return dotnet(&project_root, &startup_project);
+        }
+        ProjectType::Next => {
+            return frontend_nextjs();
+        }
+        ProjectType::Frontend => {
+            return frontend();
+        }
+    };
+}
+
+fn main() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            my_custom_command,
+            find_projects_files
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+fn dotnet(project_root: &str, startup_project: &str) -> Output {
     let mut projects: Vec<Project> = Vec::new();
     let mut docker_file_builder = dockerfile_builder::dotnet::new();
     let startup_docker_file_path =
@@ -57,20 +93,32 @@ fn my_custom_command(project_root: String, startup_project: String) -> Output {
     let dockerfile = docker_file_builder
         .dotnet(&dotnet_version)
         .build(&startup_docker_file_path);
-    println!("{}", projects.to_mermaid());
 
     return Output {
         dockerfile,
-        mermaid: projects.to_mermaid(),
+        mermaid: Some(projects.to_mermaid()),
     };
 }
 
-fn main() {
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            my_custom_command,
-            find_projects_files
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+fn frontend() -> Output {
+    // TODO: the node version should be dynamic, validate the version from the package.json
+    let docker_file = dockerfile_builder::frontend::new()
+        .with_node_version("18.17-alpine")
+        .build();
+    return Output {
+        dockerfile: docker_file,
+        mermaid: None,
+    };
+}
+
+fn frontend_nextjs() -> Output {
+    // TODO: the node version should be dynamic, validate the version from the package.json
+    let docker_file = dockerfile_builder::frontend::new()
+        .with_node_version("18.17-alpine")
+        .is_nextjs()
+        .build();
+    return Output {
+        dockerfile: docker_file,
+        mermaid: None,
+    };
 }

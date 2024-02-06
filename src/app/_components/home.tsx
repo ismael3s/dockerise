@@ -1,15 +1,25 @@
 "use client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { dark, nord } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { BsCopy, BsUpload } from "react-icons/bs";
-
+import { zodResolver } from "@hookform/resolvers/zod";
 import { open } from "@tauri-apps/api/dialog";
-import { ReactElement, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
 import { sep } from "@tauri-apps/api/path";
+import { invoke } from "@tauri-apps/api/tauri";
+import { AnimatePresence, HTMLMotionProps, motion } from "framer-motion";
+import { ReactNode, useState } from "react";
+import { BsCopy, BsUpload } from "react-icons/bs";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import { nord } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-import { SiDocker, SiDotnet } from "react-icons/si";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { Mermaid } from "@/components/ui/mermaid";
 import {
   Select,
   SelectContent,
@@ -17,136 +27,283 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Mermaid } from "@/components/ui/mermaid";
-import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { SiDocker, SiDotnet, SiNextdotjs } from "react-icons/si";
+import { z } from "zod";
 type Result = {
   mermaid: string;
   dockerfile: string;
 };
 
+enum ProjectType {
+  Dotnet = "Dotnet",
+  Next = "Next"
+}
+
+const schema = z
+  .object({
+    projectType: z.string().min(1, "Campo obrigatorio"),
+    projectRoot: z
+      .string({
+        required_error: "Campo obrigatorio"
+      })
+      .min(1, "Campo obrigatorio"),
+    availableProjectsInsideFolder: z
+      .array(z.string().default(""), {
+        required_error: "Campo obrigatorio"
+      })
+      .default([])
+      .optional()
+      .nullable(),
+    selectedStartupProject: z.string().default("").optional().nullable()
+  })
+  .refine(
+    (schema) => {
+      const isDotnetProjectWithoutStartupProject =
+        schema.projectType === ProjectType.Dotnet &&
+        !schema.selectedStartupProject;
+      return !isDotnetProjectWithoutStartupProject;
+    },
+    {
+      params: {
+        message:
+          "Ao selecionar o tipo de projeto dotnet, é obrigatorio selecionar o projeto principal."
+      },
+      message:
+        "Ao selecionar o tipo de projeto dotnet, é obrigatorio selecionar o projeto principal.",
+      path: ["selectedStartupProject"]
+    }
+  );
+
 export default function Home() {
-  const [projectRoot, setProjectRoot] = useState<string>("");
-  const [startupProject, setStartupProject] = useState<string>("");
-  const [availableProjectsInsideFolder, setAvailableProjectsInsideFolder] =
-    useState<string[]>([]);
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      projectType: ProjectType.Dotnet,
+      projectRoot: "",
+      selectedStartupProject: "",
+      availableProjectsInsideFolder: []
+    }
+  });
+
   const [result, setResult] = useState({} as Result);
-  const ref = useRef<HTMLDivElement>(null);
   async function selectProjectRoot() {
     const selected = await open({
       directory: true,
       multiple: false
     });
     if (!selected) return;
-
-    const results = await invoke("find_projects_files", {
-      path: selected
-    });
-    setAvailableProjectsInsideFolder(results as string[]);
-    setProjectRoot(selected as string);
+    form.setValue("projectRoot", selected as string);
+    if (isDotnet()) {
+      const results = await invoke<string[]>("find_projects_files", {
+        path: selected
+      });
+      form.setValue("availableProjectsInsideFolder", results);
+    }
   }
 
-  async function generateDockerFile() {
+  async function onSubmit(values: z.infer<typeof schema>) {
     const result = await invoke<Result>("my_custom_command", {
-      projectRoot,
-      startupProject
+      projectRoot: values.projectRoot,
+      startupProject: values.selectedStartupProject,
+      projectType: values.projectType
     });
     setResult(result);
   }
 
+  const isDotnet = () => form.getValues().projectType === "Dotnet";
+
   return (
     <main className="min-h-screen p-12 space-y-8">
-      <div>
-        <div
-          className="flex gap-5 hover:opacity-60 transition-opacity duration-300 ease-linear"
-          onClick={(e) => {
-            e.preventDefault();
-            selectProjectRoot();
-          }}
-        >
-          <label
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-            htmlFor="file_input"
-          >
-            Selecione a raiz do projeto
-          </label>
-          <BsUpload id="file_input" />
-        </div>
-        <div>
-          <p className="text-sm font-medium font-sans">{projectRoot}</p>
-        </div>
-      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="projectType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Selecione a linguagem do projeto</FormLabel>
+                <FormControl>
+                  <Select
+                    defaultValue={field.value}
+                    onValueChange={(value) => {
+                      form.reset({
+                        projectRoot: "",
+                        projectType: value,
+                        availableProjectsInsideFolder: [],
+                        selectedStartupProject: ""
+                      });
+                      setResult({
+                        dockerfile: "",
+                        mermaid: ""
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-[400px]">
+                      <SelectValue placeholder="Selecione o tipo da aplicação" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        value={ProjectType.Dotnet}
+                        className="flex flex-row"
+                      >
+                        <div className="flex gap-2 items-center">
+                          <SiDotnet />
+                          Dotnet
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ProjectType.Next}>
+                        <div className="flex gap-2 items-center">
+                          <SiNextdotjs />
+                          Next.js
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <div className=" ">
-        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
-          Selecione o projeto principal
-        </label>
+          <FormField
+            control={form.control}
+            name="projectRoot"
+            render={({ field }) => (
+              <div>
+                <div
+                  className="flex gap-5 hover:opacity-60 transition-opacity duration-300 ease-linear"
+                  {...field}
+                  onClick={() => {
+                    selectProjectRoot();
+                  }}
+                >
+                  <label
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                    htmlFor="file_input"
+                  >
+                    Selecione a raiz do projeto
+                  </label>
+                  <BsUpload id="file_input" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium font-sans">{field.value}</p>
+                </div>
+                <FormMessage />
+              </div>
+            )}
+          />
 
-        <Select
-          disabled={!projectRoot}
-          onValueChange={(value) => {
-            setStartupProject(value);
-          }}
-        >
-          <SelectTrigger className="w-[400px]">
-            <SelectValue placeholder="Selecione o projeto principal" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableProjectsInsideFolder.map((project) => (
-              <SelectItem value={project} key={project}>
-                {project.split(sep).pop()}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          <AnimatedRender when={isDotnet}>
+            <FormField
+              control={form.control}
+              name="selectedStartupProject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Selecione o projeto principal</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange}>
+                      <SelectTrigger className="w-[400px]">
+                        <SelectValue placeholder="Selecione o projeto principal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {form
+                          .watch("availableProjectsInsideFolder")
+                          ?.map((project) => (
+                            <SelectItem value={project} key={project}>
+                              {project.split(sep).pop()}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </AnimatedRender>
 
-      <Tabs defaultValue="docker" className="min-w-[400px] min-h-[400px] ">
-        <TabsList>
-          <TabsTrigger value="docker">
-            <SiDocker className="mr-2" size={24} />
-            Gerar Dockerfile
-          </TabsTrigger>
-          <TabsTrigger value="project-reference" disabled={!result.mermaid}>
-            <SiDotnet className="mr-2" size={24} />
-            Visualizar referencias do projeto
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="docker" className="">
-          <Button
-            disabled={!projectRoot || !startupProject}
-            onClick={generateDockerFile}
-            className="my-1"
-          >
-            Gerar Dockerfile
-          </Button>
+          <div className="">
+            <Button className="my-1" type="submit">
+              Gerar Dockerfile
+            </Button>
+          </div>
+        </form>
+      </Form>
 
-          {result.dockerfile && (
-            <div className="relative mt-4">
-              <BsCopy
-                className="cursor-pointer hover:opacity-70 transition-opacity duration-300 ease-linear 
+      <AnimatedRender when={() => !!result.dockerfile}>
+        <Tabs defaultValue="docker" className="min-w-[400px] min-h-[400px] ">
+          <TabsList>
+            <TabsTrigger value="docker">
+              <SiDocker className="mr-2" size={24} />
+              Dockerfile
+            </TabsTrigger>
+            <Render when={isDotnet}>
+              <TabsTrigger value="project-reference" disabled={!result.mermaid}>
+                <SiDotnet className="mr-2" size={24} />
+                Visualizar referencias do projeto
+              </TabsTrigger>
+            </Render>
+          </TabsList>
+          <TabsContent value="docker" className="">
+            {result.dockerfile && (
+              <div className="relative mt-4">
+                <BsCopy
+                  className="cursor-pointer hover:opacity-70 transition-opacity duration-300 ease-linear 
                 absolute top-4 right-4
                 "
-                onClick={() => {
-                  window?.navigator?.clipboard.writeText(result.dockerfile);
-                }}
-              />
-              <SyntaxHighlighter
-                language="dockerfile"
-                // wrapLongLines
-                showLineNumbers
-                style={nord}
-              >
-                {result.dockerfile}
-              </SyntaxHighlighter>
+                  onClick={() => {
+                    window?.navigator?.clipboard.writeText(result.dockerfile);
+                  }}
+                />
+                <SyntaxHighlighter
+                  language="dockerfile"
+                  showLineNumbers
+                  style={nord}
+                >
+                  {result.dockerfile}
+                </SyntaxHighlighter>
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="project-reference">
+            <div className="my-1">
+              <Mermaid chart={result.mermaid} />
             </div>
-          )}
-        </TabsContent>
-        <TabsContent value="project-reference">
-          <div className="my-1">
-            <Mermaid chart={result.mermaid} />
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </AnimatedRender>
     </main>
+  );
+}
+
+export function Render({
+  when,
+  children
+}: {
+  when: () => boolean;
+  children: ReactNode;
+}) {
+  return when() ? <>{children}</> : null;
+}
+
+export function AnimatedRender({
+  when,
+  children,
+  motionProps = {
+    transition: { duration: 0.2 },
+    initial: { opacity: 0, x: -100 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -100 }
+  }
+}: {
+  when: () => boolean;
+  children: ReactNode;
+  motionProps?: HTMLMotionProps<"div">;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      {when() ? <motion.div {...motionProps}>{children}</motion.div> : null}
+    </AnimatePresence>
   );
 }
