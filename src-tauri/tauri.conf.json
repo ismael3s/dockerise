@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Arise",
-    "version": "0.1.531"
+    "version": "0.1.532"
   },
   "tauri": {
     "allowlist": {
@@ -63,7 +63,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/ismael3s/dockerise/releases/download/0.1.531/latest.json"
+        "https://github.com/ismael3s/dockerise/releases/download/0.1.532/latest.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc4OENDRUM0MEU2M0IwQTkKUldTcHNHTU94TTZNZUh1dFREN3FuMW9SRGxOMHQ3WUFyWllxTEgvZUJxOHkrSTRwZFc4SGtTMmUK"
