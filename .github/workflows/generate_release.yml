@@ -41,7 +41,7 @@ jobs:
           cache: "npm"
 
       - name: Install frontend dependencies
-        run: npm i
+        run: npm ci
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
