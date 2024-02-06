@@ -6,8 +6,8 @@
     "distDir": "../out"
   },
   "package": {
-    "productName": "Dockerise",
-    "version": "0.1.2"
+    "productName": "Arise",
+    "version": "0.1.3"
   },
   "tauri": {
     "allowlist": {
