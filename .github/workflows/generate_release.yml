@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest]
+        platform: [self-hosted]
     runs-on: ${{ matrix.platform }}
 
     steps:
