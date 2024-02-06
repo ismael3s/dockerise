@@ -91,7 +91,7 @@ export default function Home() {
         projectRoot: form.getValues().projectRoot,
         dockerfile: result.dockerfile
       });
-    } catch (error: string) {
+    } catch (error: any) {
       toast({
         title: "Erro ao criar Dockerfile",
         description: error
