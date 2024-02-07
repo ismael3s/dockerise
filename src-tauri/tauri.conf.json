@@ -63,7 +63,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/ismael3s/dockerise/releases/download/v0.1.535/latest.json"
+        "https://ismael3s.vercel.app/api/arise"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc4OENDRUM0MEU2M0IwQTkKUldTcHNHTU94TTZNZUh1dFREN3FuMW9SRGxOMHQ3WUFyWllxTEgvZUJxOHkrSTRwZFc4SGtTMmUK"
