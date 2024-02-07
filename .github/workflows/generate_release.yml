@@ -27,17 +27,17 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Rust setup
-        if: matrix.platform == 'self-hosted'
+        if: matrix.platform != 'self-hosted'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Rust cache
-        if: matrix.platform == 'self-hosted'
+        if: matrix.platform != 'self-hosted'
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
 
       - name: Sync node version and setup cache
-        if: matrix.platform == 'self-hosted'
+        if: matrix.platform != 'self-hosted'
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
