@@ -4,8 +4,8 @@
 mod dockerfile_builder;
 mod parse_dotnet_projects_reference;
 mod write_dockerfile;
-
 use std::{fs::File, io::BufReader, path::MAIN_SEPARATOR};
+use tauri::{Manager, Window};
 use walkdir::WalkDir;
 
 use crate::{dockerfile_builder::DockerFilePath, parse_dotnet_projects_reference::Mermaid};
@@ -65,13 +65,27 @@ fn my_custom_command(
         }
     };
 }
+#[tauri::command]
+async fn close_splashscreen(window: Window) {
+    window
+        .get_window("splashscreen")
+        .expect("no window labeled 'splashscreen' found")
+        .close()
+        .unwrap();
+    window
+        .get_window("main")
+        .expect("no window labeled 'main' found")
+        .show()
+        .unwrap();
+}
 
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             my_custom_command,
             find_projects_files,
-            write_docker
+            write_docker,
+            close_splashscreen
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

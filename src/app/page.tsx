@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 const Home = dynamic(() => import("./_components/home"), {
-  ssr: false,
+  ssr: false
 });
 export default function HomePage() {
   return <Home />;

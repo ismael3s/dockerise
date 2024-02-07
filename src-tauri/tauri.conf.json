@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Arise",
-    "version": "0.1.538"
+    "version": "0.1.54"
   },
   "tauri": {
     "allowlist": {
@@ -74,7 +74,17 @@
         "height": 600,
         "resizable": true,
         "title": "Arise",
-        "width": 800
+        "width": 800,
+        "visible": false,
+        "label": "main"
+      },
+      {
+        "width": 500,
+        "height": 300,
+        "center": true,
+        "decorations": false,
+        "url": "splashscreen",
+        "label": "splashscreen"
       }
     ]
   }
