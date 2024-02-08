@@ -1,6 +1,6 @@
 "use client";
 import { z } from "zod";
-import { ProjectType } from "./home";
+import { ProjectType } from "./docker";
 
 export const schema = z
   .object({

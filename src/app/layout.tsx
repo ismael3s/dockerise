@@ -3,6 +3,11 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import dynamic from "next/dynamic";
+import { cn } from "@/lib/utils";
+const SideMenu = dynamic(() => import("./dashboard/_components/side-menu"), {
+  ssr: true
+});
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-br" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={cn(inter.className, "flex gap-4")}>
         {" "}
         <ThemeProvider
           attribute="class"

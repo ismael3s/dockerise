@@ -42,7 +42,7 @@ export enum ProjectType {
   Next = "Next"
 }
 
-export default function Home() {
+export default function DockerPage() {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),

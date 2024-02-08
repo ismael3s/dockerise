@@ -1,7 +1,6 @@
-import dynamic from "next/dynamic";
-const Home = dynamic(() => import("./_components/home"), {
-  ssr: false
-});
+import { redirect } from "next/navigation";
+
 export default function HomePage() {
-  return <Home />;
+  redirect("/dashboard/docker");
+  // return <></>;
 }
