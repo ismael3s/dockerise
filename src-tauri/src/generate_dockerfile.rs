@@ -43,6 +43,9 @@ impl GenerateDockerfile {
             ProjectType::Next => {
                 return frontend_nextjs();
             }
+            ProjectType::Vite => {
+                return frontend_vite();
+            }
         };
     }
 }
@@ -81,10 +84,37 @@ fn dotnet(project_root: &str, startup_project: &str) -> Output {
 }
 
 fn frontend_nextjs() -> Output {
-    // TODO: the node version should be dynamic, validate the version from the package.json
-    let docker_file = dockerfile_builder::frontend::new()
-        .with_node_version("18.17-alpine")
-        .is_nextjs()
+    let docker_file = dockerfile_builder::DockerfileBuilder::new()
+        .from(&format!("node:{} AS build", "18-alpine"))
+        .workdir("/app")
+        .copy("package*.json ./")
+        .run("npm ci")
+        .copy(". .")
+        .run("npm run build")
+        .from(&format!("node:{} AS production", "18-alpine"))
+        .workdir("/app")
+        .copy("--from=build /app/package*.json ./")
+        .run("npm ci")
+        .copy("--from=build /app/.next ./.next")
+        .copy("--from=build /app/public ./public")
+        .entrypoint("[\"npm\", \"start\"]")
+        .build();
+    return Output {
+        dockerfile: docker_file,
+        mermaid: None,
+    };
+}
+
+fn frontend_vite() -> Output {
+    let docker_file = dockerfile_builder::DockerfileBuilder::new()
+        .from(&format!("node:{} AS build", "18-alpine"))
+        .workdir("/build")
+        .copy("package*.json ./")
+        .run("npm ci")
+        .copy(". .")
+        .run("npm run build")
+        .from("nginx:alpine AS production")
+        .copy("--from=build /build/dist /usr/share/nginx/html")
         .build();
     return Output {
         dockerfile: docker_file,

@@ -17,7 +17,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
 import { Mermaid } from "@/components/ui/mermaid";
 import {
@@ -25,11 +25,11 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
-import { SiDocker, SiDotnet, SiNextdotjs } from "react-icons/si";
+import { SiDocker, SiDotnet, SiNextdotjs, SiVite } from "react-icons/si";
 import { z } from "zod";
 import { schema } from "./schema";
 type Result = {
@@ -39,7 +39,8 @@ type Result = {
 
 export enum ProjectType {
   Dotnet = "Dotnet",
-  Next = "Next"
+  Next = "Next",
+  Vite = "Vite",
 }
 
 export default function DockerPage() {
@@ -50,8 +51,8 @@ export default function DockerPage() {
       projectType: ProjectType.Dotnet,
       projectRoot: "",
       selectedStartupProject: "",
-      availableProjectsInsideFolder: []
-    }
+      availableProjectsInsideFolder: [],
+    },
   });
 
   const [result, setResult] = useState({} as Result);
@@ -59,13 +60,13 @@ export default function DockerPage() {
   async function selectProjectRoot() {
     const selected = await open({
       directory: true,
-      multiple: false
+      multiple: false,
     });
     if (!selected) return;
     form.setValue("projectRoot", selected as string);
     if (isDotnet()) {
       const results = await invoke<string[]>("find_projects_files", {
-        path: selected
+        path: selected,
       });
       form.setValue("availableProjectsInsideFolder", results);
     }
@@ -75,7 +76,7 @@ export default function DockerPage() {
     const result = await invoke<Result>("my_custom_command", {
       projectRoot: values.projectRoot,
       maybeStartupProject: values.selectedStartupProject,
-      projectType: values.projectType
+      projectType: values.projectType,
     });
     setResult(result);
   }
@@ -85,16 +86,16 @@ export default function DockerPage() {
       toast({
         title: "Dockerfile criado com sucesso!",
         description:
-          "Os arquivos Dockerfile e .dockerignore foram criados com sucesso!"
+          "Os arquivos Dockerfile e .dockerignore foram criados com sucesso!",
       });
       await invoke<string>("write_docker", {
         projectRoot: form.getValues().projectRoot,
-        dockerfile: result.dockerfile
+        dockerfile: result.dockerfile,
       });
     } catch (error: any) {
       toast({
         title: "Erro ao criar Dockerfile",
-        description: error
+        description: error,
       });
     }
   }
@@ -119,11 +120,11 @@ export default function DockerPage() {
                         projectRoot: "",
                         projectType: value,
                         availableProjectsInsideFolder: [],
-                        selectedStartupProject: ""
+                        selectedStartupProject: "",
                       });
                       setResult({
                         dockerfile: "",
-                        mermaid: ""
+                        mermaid: "",
                       });
                     }}
                   >
@@ -144,6 +145,12 @@ export default function DockerPage() {
                         <div className="flex gap-2 items-center">
                           <SiNextdotjs />
                           Next.js
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ProjectType.Vite}>
+                        <div className="flex gap-2 items-center">
+                          <SiVite />
+                          Vite
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -281,7 +288,7 @@ export default function DockerPage() {
 
 export function Render({
   when,
-  children
+  children,
 }: {
   when: () => boolean;
   children: ReactNode;
@@ -296,8 +303,8 @@ export function AnimatedRender({
     transition: { duration: 0.2 },
     initial: { opacity: 0, x: -100 },
     animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -100 }
-  }
+    exit: { opacity: 0, x: -100 },
+  },
 }: {
   when: () => boolean;
   children: ReactNode;

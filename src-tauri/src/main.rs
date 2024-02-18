@@ -15,6 +15,7 @@ use serde::Deserialize;
 pub enum ProjectType {
     Dotnet,
     Next,
+    Vite,
 }
 
 #[tauri::command]

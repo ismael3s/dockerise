@@ -69,8 +69,8 @@ impl DockerfileBuilder {
     //     self
     // }
 
-    pub fn from(&mut self, port: &str) -> &mut DockerfileBuilder {
-        self.dockerfile.push_str(&format!("FROM {}\n", port));
+    pub fn from(&mut self, image: &str) -> &mut DockerfileBuilder {
+        self.dockerfile.push_str(&format!("FROM {}\n", image));
         self
     }
 
@@ -163,61 +163,6 @@ ENTRYPOINT [\"dotnet\", \"{}\"]
                 startup_docker_file_path.dll()
             ));
             return self.docker_file_builder.dockerfile.clone();
-        }
-    }
-}
-
-pub mod frontend {
-    use super::DockerfileBuilder;
-
-    pub struct Builder {
-        docker_file_builder: DockerfileBuilder,
-        node_version: String,
-        is_nextjs: bool,
-    }
-
-    pub fn new() -> Builder {
-        Builder {
-            docker_file_builder: DockerfileBuilder::new(),
-            node_version: String::from("18.0"),
-            is_nextjs: false,
-        }
-    }
-
-    impl Builder {
-        pub fn with_node_version(&mut self, node_version: &str) -> &mut Builder {
-            self.node_version = node_version.to_string();
-            self
-        }
-
-        pub fn is_nextjs(&mut self) -> &mut Builder {
-            self.is_nextjs = true;
-            self
-        }
-
-        pub fn build(&mut self) -> String {
-            let dist_folder = if self.is_nextjs { ".next" } else { "dist" };
-            return self
-                .docker_file_builder
-                .from(&format!("node:{} AS build", self.node_version))
-                .workdir("/app")
-                .copy("package*.json ./")
-                .copy(". .")
-                .run("npm run build")
-                .from(&format!("node:{} AS production", self.node_version))
-                .workdir("/app")
-                .copy("--from=build /app/package*.json ./")
-                .run("npm ci")
-                .copy(
-                    format!(
-                        "--from=build /app/{dist_folder} ./{dist_folder}",
-                        dist_folder = dist_folder
-                    )
-                    .as_str(),
-                )
-                .copy("--from=build /app/public ./public")
-                .entrypoint("[\"npm\", \"start\"]")
-                .build();
         }
     }
 }
