@@ -1,7 +1,7 @@
 use tauri::{Manager, Window};
 use walkdir::WalkDir;
 
-use crate::write_dockerfile;
+use crate::{write_dockerfile, ProjectType};
 
 #[tauri::command]
 pub async fn close_splashscreen(window: Window) {
@@ -18,10 +18,15 @@ pub async fn close_splashscreen(window: Window) {
 }
 
 #[tauri::command]
-pub fn write_docker(project_root: String, dockerfile: String) -> Result<(), &'static str> {
+pub fn write_docker(
+    project_root: String,
+    dockerfile: String,
+    project_type: ProjectType,
+) -> Result<(), &'static str> {
     let input = write_dockerfile::Input {
         project_root,
         dockerfile,
+        project_type,
         should_override: true,
     };
     return write_dockerfile::WriteDockerfile::new().execute(input);

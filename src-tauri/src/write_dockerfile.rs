@@ -1,9 +1,12 @@
 use std::{fs::File, io::Write};
 
+use crate::ProjectType;
+
 pub struct Input {
     pub project_root: String,
     pub dockerfile: String,
     pub should_override: bool,
+    pub project_type: ProjectType,
 }
 
 pub struct WriteDockerfile {}
@@ -69,6 +72,30 @@ README.md
         };
         match file.write_all(dockerignore.as_bytes()) {
             Err(_) => return Err("Erro ao escrever .dockerignore"),
+            _ => {}
+        }
+
+        match input.project_type {
+            ProjectType::Vite => {
+                let nginx_conf = "
+                server {
+                    listen 80;
+                    location / {
+                        root   /usr/share/nginx/html;
+                        index  index.html index.htm;
+                        try_files $uri /index.html;
+                    }
+                }
+                ";
+                let mut file = match File::create(format!("{}/nginx.conf", input.project_root)) {
+                    Ok(file) => file,
+                    Err(_) => return Err("Erro ao criar nginx.conf"),
+                };
+                match file.write_all(nginx_conf.as_bytes()) {
+                    Err(_) => return Err("Erro ao escrever nginx.conf"),
+                    _ => {}
+                }
+            }
             _ => {}
         }
 

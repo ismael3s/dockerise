@@ -17,7 +17,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
 import { Mermaid } from "@/components/ui/mermaid";
 import {
@@ -25,7 +25,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useForm } from "react-hook-form";
@@ -40,7 +40,7 @@ type Result = {
 export enum ProjectType {
   Dotnet = "Dotnet",
   Next = "Next",
-  Vite = "Vite"
+  Vite = "Vite",
 }
 
 export default function DockerPage() {
@@ -51,8 +51,8 @@ export default function DockerPage() {
       projectType: ProjectType.Dotnet,
       projectRoot: "",
       selectedStartupProject: "",
-      availableProjectsInsideFolder: []
-    }
+      availableProjectsInsideFolder: [],
+    },
   });
 
   const [result, setResult] = useState({} as Result);
@@ -60,13 +60,13 @@ export default function DockerPage() {
   async function selectProjectRoot() {
     const selected = await open({
       directory: true,
-      multiple: false
+      multiple: false,
     });
     if (!selected) return;
     form.setValue("projectRoot", selected as string);
     if (isDotnet()) {
       const results = await invoke<string[]>("find_projects_files", {
-        path: selected
+        path: selected,
       });
       form.setValue("availableProjectsInsideFolder", results);
     }
@@ -76,26 +76,27 @@ export default function DockerPage() {
     const result = await invoke<Result>("my_custom_command", {
       projectRoot: values.projectRoot,
       maybeStartupProject: values.selectedStartupProject,
-      projectType: values.projectType
+      projectType: values.projectType,
     });
     setResult(result);
   }
 
   async function writeDockerFile() {
     try {
+      await invoke<string>("write_docker", {
+        projectRoot: form.getValues().projectRoot,
+        dockerfile: result.dockerfile,
+        projectType: form.getValues().projectType,
+      });
       toast({
         title: "Dockerfile criado com sucesso!",
         description:
-          "Os arquivos Dockerfile e .dockerignore foram criados com sucesso!"
-      });
-      await invoke<string>("write_docker", {
-        projectRoot: form.getValues().projectRoot,
-        dockerfile: result.dockerfile
+          "Os arquivos Dockerfile e .dockerignore foram criados com sucesso!",
       });
     } catch (error: any) {
       toast({
         title: "Erro ao criar Dockerfile",
-        description: error
+        description: error,
       });
     }
   }
@@ -120,11 +121,11 @@ export default function DockerPage() {
                         projectRoot: "",
                         projectType: value,
                         availableProjectsInsideFolder: [],
-                        selectedStartupProject: ""
+                        selectedStartupProject: "",
                       });
                       setResult({
                         dockerfile: "",
-                        mermaid: ""
+                        mermaid: "",
                       });
                     }}
                   >
@@ -288,7 +289,7 @@ export default function DockerPage() {
 
 export function Render({
   when,
-  children
+  children,
 }: {
   when: () => boolean;
   children: ReactNode;
@@ -303,8 +304,8 @@ export function AnimatedRender({
     transition: { duration: 0.2 },
     initial: { opacity: 0, x: -100 },
     animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -100 }
-  }
+    exit: { opacity: 0, x: -100 },
+  },
 }: {
   when: () => boolean;
   children: ReactNode;

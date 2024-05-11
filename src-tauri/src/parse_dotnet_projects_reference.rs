@@ -3,7 +3,7 @@ use std::path::MAIN_SEPARATOR;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct PropertyGroup {
-    #[serde(rename = "TargetFramework")]
+    #[serde(rename = "TargetFramework", default)]
     target_framework: String,
 }
 
@@ -24,7 +24,7 @@ pub struct Project {
     #[serde(rename = "Name", default)]
     name: String,
     #[serde(rename = "PropertyGroup")]
-    property_group: PropertyGroup,
+    property_group: Vec<PropertyGroup>,
     #[serde(rename = "ItemGroup", default)]
     items_groups: Vec<ItemGroup>,
 }
@@ -38,7 +38,12 @@ impl ProjectReference {
 impl Project {
     pub fn get_dotnet_version(&self) -> String {
         self.property_group
+            .iter()
+            .filter(|pg| pg.target_framework.len() > 0)
+            .next()
+            .unwrap()
             .target_framework
+            .clone()
             .chars()
             .filter(|c| c.is_digit(10) || c == &'.')
             .collect()

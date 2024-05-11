@@ -79,6 +79,16 @@ impl DockerfileBuilder {
         self
     }
 
+    pub fn arg(&mut self, arg: &str) -> &mut DockerfileBuilder {
+        self.dockerfile.push_str(&format!("ARG {}\n", arg));
+        self
+    }
+
+    pub fn expose(&mut self, port: i32) -> &mut DockerfileBuilder {
+        self.dockerfile.push_str(&format!("EXPOSE {}\n", port));
+        self
+    }
+
     pub fn build(&self) -> String {
         self.dockerfile.clone()
     }
@@ -102,19 +112,28 @@ pub mod dotnet {
 
     impl Builder {
         pub fn dotnet(&mut self, dotnet_version: &str) -> &mut Builder {
-            self.docker_file_builder.dockerfile = format!(
-                "
-FROM mcr.microsoft.com/dotnet/aspnet:{dotnet_version} AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+            println!("dotnet_version: {}", dotnet_version);
+            let float_dotnet_version = dotnet_version.parse::<f32>().unwrap();
 
-FROM mcr.microsoft.com/dotnet/sdk:{dotnet_version} AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-",
-                dotnet_version = dotnet_version
-            );
+            self.docker_file_builder.dockerfile = DockerfileBuilder::new()
+                .from(&format!(
+                    "mcr.microsoft.com/dotnet/aspnet:{} AS base",
+                    dotnet_version
+                ))
+                .expose(if float_dotnet_version < 8.0 { 80 } else { 8080 })
+                .expose(if float_dotnet_version < 8.0 {
+                    443
+                } else {
+                    8081
+                })
+                .workdir("/app")
+                .from(&format!(
+                    "mcr.microsoft.com/dotnet/sdk:{} AS build",
+                    dotnet_version
+                ))
+                .arg("BUILD_CONFIGURATION=Release")
+                .workdir("/src")
+                .build();
             return self;
         }
 

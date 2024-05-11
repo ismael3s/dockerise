@@ -72,7 +72,7 @@ fn dotnet(project_root: &str, startup_project: &str) -> Output {
                 Err(_) => {}
             }
         });
-    let dotnet_version = projects.first().unwrap().get_dotnet_version();
+    let dotnet_version: String = projects.first().unwrap().get_dotnet_version();
     let dockerfile = docker_file_builder
         .dotnet(&dotnet_version)
         .build(&startup_docker_file_path);
@@ -115,6 +115,8 @@ fn frontend_vite() -> Output {
         .run("npm run build")
         .from("nginx:alpine AS production")
         .copy("--from=build /build/dist /usr/share/nginx/html")
+        .run("rm /etc/nginx/conf.d/default.conf")
+        .copy("nginx.conf /etc/nginx/conf.d")
         .build();
     return Output {
         dockerfile: docker_file,
